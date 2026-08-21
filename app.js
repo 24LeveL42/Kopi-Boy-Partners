@@ -15,7 +15,10 @@ async function session(){
   if(error){
     toast("Authentication check failed");
     return null;
-  }
+  }return session||null;
+}
+
+async function choosePartner(role){
 
   return session||null;
 }
@@ -49,7 +52,7 @@ async function choosePartner(role){
     role==="cook"
       ? "Sign in to register as a Cook"
       : "Sign in to register as a Rider"
-  );
+  );$('cookAccessStatus').textContent='Application submitted. Waiting for management approval.';
 }
 async function loadCookSelectors(){await session();const {data,error}=await supabase.from("merchants").select("id,name,status,active").eq("status","approved").eq("active",true).order("name");$("cookSelector").innerHTML="<option value=''>Select your name</option>"+(data||[]).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");if(error)toast("Could not load approved cooks");}
 async function enterCook(){const id=$("cookSelector").value;if(!id)return toast("Select your name");const {data,error}=await supabase.from("merchants").select("*").eq("id",id).single();if(error)return toast("Cook profile not found");currentCook=data;$("cookName").textContent=data.name+" · Cook";renderCookProfile();go("cookDashboard");initCook();loadMenu();}
