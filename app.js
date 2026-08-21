@@ -17,7 +17,7 @@ async function session(){
     return null;
   }
 
-  return session||null;
+  return session||null;}
 async function choosePartner(role){
   currentRole=role;
 
