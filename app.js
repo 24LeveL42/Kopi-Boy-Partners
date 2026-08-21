@@ -4,8 +4,21 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 function go(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));if($(id))$(id).classList.add("active");}
 function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(window.tt);window.tt=setTimeout(()=>t.style.display="none",1800);}
 function statusLabel(s){return({placed:"Order Placed",accepted:"Cook Accepted",declined:"Declined",looking_for_rider:"Looking for Rider",rider_accepted:"Rider Accepted",cooking:"Cooking",ready:"Ready for Pickup",out_for_delivery:"Out for Delivery",delivered:"Delivered"})[s]||s;}
-async function session(){if(!window.KOPI_SUPABASE_READY){toast("Kopi Boy database not connected");return null;}let {data:{session}}=await supabase.auth.getSession();if(session)return session;let r=await supabase.auth.signInAnonymously();if(r.error){toast("Connection failed");return null}return r.data.session;}
-function choosePartner(role){currentRole=role;if(role==="cook"){go("cookAccess");loadCookSelectors()}else{go("riderAccess");loadRiderSelectors()}}
+async function session(){
+  if(!window.KOPI_SUPABASE_READY){
+    toast("Kopi Boy database not connected");
+    return null;
+  }
+
+  const {data:{session},error}=await supabase.auth.getSession();
+
+  if(error){
+    toast("Authentication check failed");
+    return null;
+  }
+
+  return session||null;
+}function choosePartner(role){currentRole=role;if(role==="cook"){go("cookAccess");loadCookSelectors()}else{go("riderAccess");loadRiderSelectors()}}
 async function loadCookSelectors(){await session();const {data,error}=await supabase.from("merchants").select("id,name,status,active").eq("status","approved").eq("active",true).order("name");$("cookSelector").innerHTML="<option value=''>Select your name</option>"+(data||[]).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");if(error)toast("Could not load approved cooks");}
 async function enterCook(){const id=$("cookSelector").value;if(!id)return toast("Select your name");const {data,error}=await supabase.from("merchants").select("*").eq("id",id).single();if(error)return toast("Cook profile not found");currentCook=data;$("cookName").textContent=data.name+" · Cook";renderCookProfile();go("cookDashboard");initCook();loadMenu();}
 function toggleSfaFields(){$('sfaFields').classList.toggle('hidden',!$('cookSfaLicensed').checked);}
