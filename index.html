@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17100b">
+<title>Kopi Boy Management</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-app="management">
+<div class="app-shell"><section class="app">
+
+  <div class="phone-head">
+    <div class="wordmark"><span class="mini-cup">☕</span> KOPI <b>BOY</b></div>
+    <button class="icon-btn" onclick="refreshAll()">↻</button>
+  </div>
+
+  <div class="screen active cream-screen" id="login">
+    <div class="access-card">
+      <div class="access-icon">👑</div>
+      <h2>Kopi Boy Management</h2>
+      <p>Private administration dashboard.</p>
+      <button class="orange full" onclick="openManagementAuth()">SIGN IN WITH GOOGLE</button>
+      <div class="small-note">Management access is authenticated with your approved Google account.</div>
+    </div>
+  </div>
+
+  <div class="screen cream-screen" id="dashboard">
+    <div class="dashboard-heading">
+      <div><small>KOPI BOY ADMIN</small><h2>Management</h2></div>
+      <button class="mini-orange" onclick="refreshAll()">Refresh</button>
+    </div>
+
+    <div id="newApplicationBanner" class="admin-card hidden">
+      <b>🔔 New partner applications</b>
+      <small id="newApplicationText">New applications are waiting for review.</small>
+      <button class="orange full" onclick="showTab('applications',document.querySelector('.admin-tabs button'))">REVIEW APPLICATIONS</button>
+    </div>
+
+    <div class="stats-grid">
+      <div><b id="pendingCooks">0</b><small>Cook Applications</small></div>
+      <div><b id="pendingRiders">0</b><small>Rider Applications</small></div>
+      <div><b id="approvedCooks">0</b><small>Approved Cooks</small></div>
+      <div><b id="approvedRiders">0</b><small>Approved Riders</small></div>
+      <div><b id="activeOrders">0</b><small>Active Orders</small></div>
+      <div><b id="todayOrders">0</b><small>Today's Orders</small></div>
+    </div>
+
+    <div class="admin-tabs">
+      <button class="active" onclick="showTab('applications',this)">Applications</button>
+      <button onclick="showTab('orders',this)">Orders</button>
+      <button onclick="showTab('partners',this)">Partners</button>
+    </div>
+
+    <div id="applicationsTab">
+      <h3>Pending Cook Applications</h3><div id="cookApps"></div>
+      <h3>Pending Rider Applications</h3><div id="riderApps"></div>
+    </div>
+
+    <div id="ordersTab" class="hidden"><h3>Orders</h3><div id="orders"></div></div>
+
+    <div id="partnersTab" class="hidden">
+      <h3>Approved Cooks</h3><div id="cookPartners"></div>
+      <h3>Approved Riders</h3><div id="riderPartners"></div>
+    </div>
+  </div>
+
+</section></div>
+
+<div id="toast"></div>
+
+<div id="applicationModal" class="kb-auth-overlay hidden">
+  <div class="kb-auth-card">
+    <div class="kb-auth-logo">📋</div>
+    <h2 id="modalTitle">Application</h2>
+    <div id="modalBody"></div>
+    <button id="modalApprove" class="orange full">APPROVE</button>
+    <button id="modalReject" class="kb-phone full">REJECT</button>
+    <button class="kb-phone full" onclick="closeApplicationModal()">CLOSE</button>
+  </div>
+</div>
+
+<div id="kbAuthOverlay" class="kb-auth-overlay hidden">
+  <div class="kb-auth-card">
+    <div class="kb-auth-logo">☕</div>
+    <h2 id="kbAuthTitle">Management sign in</h2>
+    <p id="kbAuthSubtitle">Use your approved management Google account.</p>
+    <button class="kb-google" onclick="kbSignIn('google')">Continue with Google</button>
+    <small>Management authentication is Google-only for this internal build.</small>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
