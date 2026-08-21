@@ -18,7 +18,38 @@ async function session(){
   }
 
   return session||null;
-}function choosePartner(role){currentRole=role;if(role==="cook"){go("cookAccess");loadCookSelectors()}else{go("riderAccess");loadRiderSelectors()}}
+async function choosePartner(role){
+  currentRole=role;
+
+  localStorage.setItem("kb_partner_pending_role",role);
+
+  if(!kbAuthReady()){
+    toast("Kopi Boy database is not connected");
+    return;
+  }
+
+  const user=await kbGetUser();
+
+  if(user){
+    localStorage.removeItem("kb_partner_pending_role");
+
+    if(role==="cook"){
+      go("cookAccess");
+      loadCookSelectors();
+    }else{
+      go("riderAccess");
+      loadRiderSelectors();
+    }
+
+    return;
+  }
+
+  kbOpenAuth(
+    role==="cook"
+      ? "Sign in to register as a Cook"
+      : "Sign in to register as a Rider"
+  );
+}
 async function loadCookSelectors(){await session();const {data,error}=await supabase.from("merchants").select("id,name,status,active").eq("status","approved").eq("active",true).order("name");$("cookSelector").innerHTML="<option value=''>Select your name</option>"+(data||[]).map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join("");if(error)toast("Could not load approved cooks");}
 async function enterCook(){const id=$("cookSelector").value;if(!id)return toast("Select your name");const {data,error}=await supabase.from("merchants").select("*").eq("id",id).single();if(error)return toast("Cook profile not found");currentCook=data;$("cookName").textContent=data.name+" · Cook";renderCookProfile();go("cookDashboard");initCook();loadMenu();}
 function toggleSfaFields(){$('sfaFields').classList.toggle('hidden',!$('cookSfaLicensed').checked);}
