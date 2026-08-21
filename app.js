@@ -79,7 +79,30 @@ async function loadJobs(){const {data,error}=await supabase.from("orders").selec
 async function acceptJob(id){const {data,error}=await supabase.from("orders").update({status:"rider_accepted",rider_id:currentRider.id,rider_name:currentRider.name,rider_accepted_at:new Date().toISOString()}).eq("id",id).is("rider_id",null).select().single();if(error)return toast("Job already taken");renderRiderJob(data);toast("Delivery accepted ✓");}
 function renderRiderJob(o){$("riderJobTitle").textContent=o.order_number;$("riderJobContent").innerHTML=`<div class="rider-order-card"><span class="status-pill ${o.status}">${statusLabel(o.status).toUpperCase()}</span><h3>Delivery for ${esc(currentRider.name)}</h3><div class="job-line"><span>Delivery fee</span><b>$${Number(o.delivery_fee).toFixed(2)}</b></div>${timeline(o)}${o.status==="rider_accepted"?`<button class="green full" onclick="riderStatus('${o.id}','cooking')">CONFIRM — WAITING FOR FOOD</button>`:""}${o.status==="ready"?`<button class="green full" onclick="riderStatus('${o.id}','out_for_delivery')">I'VE COLLECTED THE FOOD</button>`:""}${o.status==="out_for_delivery"?`<button class="green full" onclick="riderStatus('${o.id}','delivered')">DELIVERED TO CUSTOMER</button>`:""}</div>`;go("riderJob");}
 async function riderStatus(id,status){const p={status};if(status==="out_for_delivery")p.picked_up_at=new Date().toISOString();if(status==="delivered")p.delivered_at=new Date().toISOString();const {data,error}=await supabase.from("orders").update(p).eq("id",id).eq("rider_id",currentRider.id).select().single();if(error)return toast(error.message);renderRiderJob(data);toast(statusLabel(status)+" ✓");}
-document.addEventListener("DOMContentLoaded",()=>{});
+document.addEventListener("DOMContentLoaded",async()=>{
+  const pendingRole=localStorage.getItem("kb_partner_pending_role");
+
+  if(!pendingRole||!kbAuthReady()) return;
+
+  const user=await kbGetUser();
+
+  if(!user) return;
+
+  currentRole=pendingRole;
+  localStorage.removeItem("kb_partner_pending_role");
+
+  kbCloseAuth();
+
+  if(currentRole==="cook"){
+    go("cookAccess");
+    loadCookSelectors();
+  }else{
+    go("riderAccess");
+    loadRiderSelectors();
+  }
+
+  toast("Google account verified ✓");
+});
 
 
 /* Kopi Boy authentication foundation */
