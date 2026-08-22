@@ -1,0 +1,9 @@
+// Copy this file to supabase-config.js and insert your own Supabase Project URL + Publishable key.
+// Do NOT put a secret/service-role key here.
+window.KOPI_SUPABASE_URL = "PASTE_YOUR_SUPABASE_URL_HERE";
+window.KOPI_SUPABASE_KEY = "PASTE_YOUR_SUPABASE_PUBLISHABLE_KEY_HERE";
+window.KOPI_SUPABASE_READY = false;
+if (window.supabase && window.KOPI_SUPABASE_URL && !window.KOPI_SUPABASE_URL.includes("PASTE_")) {
+  window.supabase = window.supabase.createClient(window.KOPI_SUPABASE_URL, window.KOPI_SUPABASE_KEY);
+  window.KOPI_SUPABASE_READY = true;
+}
