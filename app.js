@@ -1,115 +1,603 @@
-const cooks=[
-{name:"Mak Cik Siti",type:"Nasi Lemak · Malay Food",rating:"4.9",reviews:"128",time:"25–35 min",distance:"1.2 km",avatar:"https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=180&q=85",foods:[
-["Nasi Lemak Ayam",6.00,"https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=500&q=85"],
-["Nasi Lemak Rendang",7.00,"https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=500&q=85"],
-["Mee Siam",5.50,"https://images.unsplash.com/photo-1559314809-0d155014e29e?auto=format&fit=crop&w=500&q=85"],
-["Kuih Lapis",2.50,"https://images.unsplash.com/photo-1599785209707-a456fc1337bb?auto=format&fit=crop&w=500&q=85"]]},
-{name:"Ah Ma Kitchen",type:"Chinese · Home Cooked",rating:"4.8",reviews:"96",time:"30–40 min",distance:"1.5 km",avatar:"https://images.unsplash.com/photo-1551836022-d5d88e9218df?auto=format&fit=crop&w=180&q=85",foods:[["Home-style Chicken",7,"https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=500&q=85"]]},
-{name:"Dapur Kak Leha",type:"Malay · Mixing Food",rating:"4.9",reviews:"74",time:"25–35 min",distance:"1.7 km",avatar:"https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=180&q=85",foods:[["Ayam Penyet",6.50,"https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?auto=format&fit=crop&w=500&q=85"]]},
-{name:"Uncle Man's Kitchen",type:"Asian Favorites",rating:"4.7",reviews:"58",time:"30–45 min",distance:"2.0 km",avatar:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=180&q=85",foods:[["Chicken Rice",6,"https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=500&q=85"]]}
-];
-
-let currentCook=cooks[0], cart=[];
-let peer=null, customerConn=null, testOrder=null;
+let currentRole=null,currentCook=null,currentRider=null,cookChannel=null,riderChannel=null,selectedPhoto="",currentLiveOrder=null;
 const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+function go(id){document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));if($(id))$(id).classList.add("active");}
+function toast(m){const t=$("toast");t.textContent=m;t.style.display="block";clearTimeout(window.tt);window.tt=setTimeout(()=>t.style.display="none",1800);}
+function statusLabel(s){return({placed:"Order Placed",accepted:"Cook Accepted",declined:"Declined",looking_for_rider:"Looking for Rider",rider_accepted:"Rider Accepted",cooking:"Cooking",ready:"Ready for Pickup",out_for_delivery:"Out for Delivery",delivered:"Delivered"})[s]||s;}
 
-function roleApp(id){
-  document.querySelectorAll(".app").forEach(a=>a.classList.add("hidden"));
-  $(id).classList.remove("hidden");
-  document.querySelectorAll(".role-switch button").forEach((b,i)=>b.classList.toggle("active",["customerApp","cookApp","riderApp"][i]===id));
-}
-function setRole(id){
-  roleApp(id);
-  if(id==="customerApp") go("customerHome");
-  if(id==="cookApp") go("cookDashboard");
-  if(id==="riderApp") go("riderDashboard");
-}
-function go(id){
-  document.querySelectorAll(".app:not(.hidden) .screen").forEach(s=>s.classList.remove("active"));
-  $(id).classList.add("active");
-  window.scrollTo(0,0);
-}
-function back(){ toast("Use the screen back button in this prototype"); }
-function toast(msg){
-  const t=$("toast");t.textContent=msg;t.style.display="block";
-  clearTimeout(window._toast);window._toast=setTimeout(()=>t.style.display="none",1600);
-}
-function cookRow(c){
- return `<div class="cook-row" onclick="openCook(${cooks.indexOf(c)})">
-  <img src="${c.avatar}">
-  <div class="cook-info"><h3>${c.name}<span class="online">● Online</span></h3>
-  <p>${c.type}</p><p><span class="rating">★ ${c.rating}</span> (${c.reviews})</p>
-  <p>◷ ${c.time}<span style="float:right">⌖ ${c.distance}</span></p></div></div>`;
+async function session(){
+  if(!window.KOPI_SUPABASE_READY){
+    toast("Kopi Boy database not connected");
+    return null;
+  }
+
+  const {data:{session},error}=await supabase.auth.getSession();
+
+  if(error){
+    toast("Authentication check failed");
+    return null;
+  }
+
+  return session||null;
 }
 
-function startCookConnection(){
- if(typeof Peer==="undefined"){toast("Connection library did not load");return;}
- if(peer){try{peer.destroy();}catch(e){}}
- const code=String(Math.floor(100000+Math.random()*900000));
- $("cookRoomCode").textContent=code;$("cookConnectionStatus").textContent="STARTING…";
- peer=new Peer("kopiboy-cook-"+code,{host:"0.peerjs.com",port:443,secure:true,path:"/"});
- peer.on("open",()=>{$("cookConnectionStatus").textContent="ONLINE";$("cookConnectionStatus").className="connection-dot online";toast("Cook online — share code "+code);});
- peer.on("connection",conn=>{customerConn=conn;customerConn.on("open",()=>toast("Customer connected ✓"));customerConn.on("data",handleCookData);});
- peer.on("error",()=>{toast("Could not start Cook test");$("cookConnectionStatus").textContent="ERROR";});
+// Strip everything but digits, then keep the last 8 (a Singapore mobile
+// number without its country code), so "+65 9826 1234", "6598261234" and
+// "98261234" all normalize to the same thing for matching.
+function normPhone(p){
+  const digits=String(p||"").replace(/\D/g,"");
+  return digits.slice(-8);
 }
-function connectCustomer(){
- if(typeof Peer==="undefined"){toast("Connection library did not load");return;}
- const code=$("customerRoomCode").value.trim();if(!/^\d{6}$/.test(code)){toast("Enter the 6-digit Cook Test Code");return;}
- if(peer){try{peer.destroy();}catch(e){}}
- peer=new Peer();$("customerConnectionStatus").textContent="Connecting…";
- customerConn=peer.connect("kopiboy-cook-"+code,{reliable:true});
- customerConn.on("open",()=>{$("customerConnectionStatus").textContent="CONNECTED ✓";$("customerConnectionStatus").className="conn-status connected";toast("Connected to Cook");});
- customerConn.on("data",handleCustomerData);customerConn.on("error",()=>toast("Customer connection failed"));
-}
-function handleCookData(msg){if(msg?.type==="new_order"){testOrder=msg.order;renderIncomingOrder();toast("🔔 NEW ORDER "+msg.order.id);}}
-function handleCustomerData(msg){if(msg?.type==="order_status"){testOrder=testOrder||{id:msg.id};testOrder.status=msg.status;renderCustomerOrderBanner();if(msg.status==="accepted")toast("Your order was accepted ✓");if(msg.status==="declined")toast("Cook declined the order");}}
-function renderIncomingOrder(){
- if(!$("incomingOrderArea")||!testOrder)return;
- $("incomingOrderArea").innerHTML=`<div class="incoming-order"><h3>🔔 New Order</h3><div class="incoming-meta">${testOrder.id}</div><div class="incoming-items">${testOrder.items.map(x=>`${x.name} <b style="float:right">$${x.price.toFixed(2)}</b>`).join("<br>")}<br><b>Total</b><b style="float:right">$${testOrder.total.toFixed(2)}</b></div><div class="incoming-actions"><button class="green" onclick="acceptTestOrder()">ACCEPT ORDER</button><button class="decline" onclick="declineTestOrder()">DECLINE</button></div></div>`;
-}
-function acceptTestOrder(){if(!testOrder||!customerConn?.open)return;testOrder.status="accepted";customerConn.send({type:"order_status",id:testOrder.id,status:"accepted"});renderIncomingOrder();toast("Order accepted ✓");}
-function declineTestOrder(){if(!testOrder||!customerConn?.open)return;testOrder.status="declined";customerConn.send({type:"order_status",id:testOrder.id,status:"declined"});renderIncomingOrder();toast("Order declined");}
-function renderCustomerOrderBanner(){const b=$("customerOrderBanner");if(!b||!testOrder)return;b.innerHTML=`<b>${testOrder.status==="accepted"?"✓ Order Accepted":testOrder.status==="declined"?"Order Declined":"Order Placed"}</b><small>${testOrder.id} · ${testOrder.status==="accepted"?"Cook has accepted your order.":"Waiting for cook confirmation."}</small><button onclick="showCustomerLiveOrder()">VIEW ORDER</button>`;b.classList.remove("hidden");}
-function showCustomerLiveOrder(){const s=testOrder?.status||"placed";$("customerLiveOrderContent").innerHTML=`<div class="live-order-card"><span class="status-pill ${s}">${s.toUpperCase()}</span><h2>${s==="accepted"?"Order accepted!":s==="declined"?"Order declined":"Order placed"}</h2><p>${testOrder?.id||""}</p><div class="status-steps"><div class="status-step on"><i>✓</i>Order Placed</div><div class="status-step ${s==="accepted"?"on":""}"><i>${s==="accepted"?"✓":"•"}</i>Cook Accepted</div><div class="status-step"><i>•</i>Cooking</div><div class="status-step"><i>•</i>Ready for Rider</div></div></div>`;go("customerLiveOrder");}
 
-function renderHome(){
-  $("popularGrid").innerHTML=cooks.slice(0,2).map((c,i)=>`<div class="popular-card" onclick="openCook(${i})">
-    <img src="${c.foods[0][2]}"><div class="pcopy"><b>${c.name}</b><br>${c.foods[0][0]}<br><span class="rating">★ ${c.rating}</span> · ${c.time}</div></div>`).join("");
+// Find an approved partner (merchant or rider) belonging to this signed-in
+// user, trying user_id first (fast path for return visits), then email,
+// then phone (for OTP sign-ins, which have no email at all). Whichever
+// fallback matches gets the user_id backfilled so future logins are instant.
+async function findApprovedPartner(table,user){
+  let {data:row}=await supabase.from(table)
+    .select("*").eq("user_id",user.id).eq("status","approved").maybeSingle();
+  if(row)return row;
+
+  const email=(user.email||"").toLowerCase();
+  if(email){
+    const {data:byEmail}=await supabase.from(table)
+      .select("*").ilike("email",email).eq("status","approved").maybeSingle();
+    if(byEmail){
+      await supabase.from(table).update({user_id:user.id}).eq("id",byEmail.id);
+      return {...byEmail,user_id:user.id};
+    }
+  }
+
+  const phone=normPhone(user.phone);
+  if(phone){
+    const {data:candidates}=await supabase.from(table)
+      .select("*").eq("status","approved");
+    const byPhone=(candidates||[]).find(r=>normPhone(r.phone)===phone);
+    if(byPhone){
+      await supabase.from(table).update({user_id:user.id}).eq("id",byPhone.id);
+      return {...byPhone,user_id:user.id};
+    }
+  }
+
+  return null;
 }
-function renderCooks(list=cooks){$("cookListItems").innerHTML=list.map(cookRow).join("");}
-function filterCooks(){
- const q=$("search").value.toLowerCase();
- renderCooks(cooks.filter(c=>(c.name+c.type).toLowerCase().includes(q)));
- go("cookList");
+
+// Same idea, but for the application tables (pending/rejected/approved).
+async function findApplication(table,user){
+  let {data:row}=await supabase.from(table)
+    .select("*").eq("user_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();
+  if(row)return row;
+
+  const email=(user.email||"").toLowerCase();
+  if(email){
+    const {data:byEmail}=await supabase.from(table)
+      .select("*").ilike("email",email).order("created_at",{ascending:false}).limit(1).maybeSingle();
+    if(byEmail)return byEmail;
+  }
+
+  const phone=normPhone(user.phone);
+  if(phone){
+    const {data:candidates}=await supabase.from(table)
+      .select("*").order("created_at",{ascending:false});
+    const byPhone=(candidates||[]).find(r=>normPhone(r.phone)===phone);
+    if(byPhone)return byPhone;
+  }
+
+  return null;
 }
-function openCook(i){
- currentCook=cooks[i];
- $("menuContent").innerHTML=`<div class="screen-title"><button class="back-small" onclick="go('cookList')">‹</button><b>${currentCook.name}</b><button>⋯</button></div>
- <div class="menu-top"><img src="${currentCook.avatar}"><div><h2>${currentCook.name} <span class="rating">★ ${currentCook.rating}</span></h2><p>${currentCook.type}</p><p>◷ ${currentCook.time} · $2.50 Delivery</p></div></div>
- <div class="menu-tabs"><button class="active">Menu</button><button>Reviews</button><button>Info</button></div>
- ${currentCook.foods.map((f,idx)=>`<div class="dish"><img src="${f[2]}"><div class="dish-main"><h3>${f[0]} <strong>$${f[1].toFixed(2)}</strong></h3><p>Fragrant, freshly prepared home-style food made with care, served with classic sides.</p></div><button class="plus" onclick="addFood(${idx})">+</button></div>`).join("")}
- ${cart.length?`<div class="cartbar"><span>🛒 ${cart.length} items · $${cartTotal().toFixed(2)}</span><button onclick="renderSummary()">View Cart</button></div>`:""}`;
- go("menuScreen");
+
+// "Sign In" — for already-approved partners returning to their dashboard.
+// Requires Google/Facebook/Phone so we can match them to their record.
+async function signInPartner(role){
+  currentRole=role;
+  localStorage.setItem("kb_partner_pending_role",role);
+
+  if(!kbAuthReady()){
+    toast("Kopi Boy database not connected");
+    return;
+  }
+
+  kbOpenAuth(
+    role==="cook"
+      ? "Sign in to access your Cook dashboard"
+      : "Sign in to access your Rider dashboard"
+  );
 }
-function addFood(idx){const f=currentCook.foods[idx];cart.push({name:f[0],price:f[1],img:f[2]});toast(f[0]+" added");openCook(cooks.indexOf(currentCook));}
-function cartTotal(){return cart.reduce((a,x)=>a+x.price,0);}
-function renderSummary(){
- $("summaryContent").innerHTML=`<div class="summary-card">
- ${cart.map(x=>`<div class="sum-row"><img src="${x.img}"><div><b>${x.name}</b><small style="display:block;color:#888;margin-top:3px">x1 · $${x.price.toFixed(2)}</small></div><b>$${x.price.toFixed(2)}</b></div>`).join("")}
- <div class="sum"><span>Subtotal</span><b>$${cartTotal().toFixed(2)}</b></div>
- <div class="sum"><span>Delivery Fee</span><b>$2.50</b></div>
- <div class="sum total"><span>Total</span><b>$${(cartTotal()+2.5).toFixed(2)}</b></div>
- <div class="pay-box">▣ &nbsp; PayNow / Bank Transfer <b>Change</b><br><small>You will pay directly to the cook.</small></div>
- <button class="orange full" onclick="placeOrder()">Place Order</button>
- <button class="text-orange full" onclick="go('menuScreen')">Cancel</button></div>`;
- go("orderSummary");
+
+// Route a signed-in user (Google, Facebook, or Phone OTP) to their
+// dashboard, application status screen, or back to sign-up if no record
+// matches at all.
+async function routeSignedInPartner(user,role){
+  const partnerTable=role==="cook"?"merchants":"riders";
+  const appTable=role==="cook"?"cook_applications":"rider_applications";
+
+  const record=await findApprovedPartner(partnerTable,user);
+  if(record){
+    role==="cook"?enterCookDashboard(record):enterRiderDashboard(record);
+    return true;
+  }
+
+  const app=await findApplication(appTable,user);
+  if(app){
+    role==="cook"?showCookApplicationStatus(app):showRiderApplicationStatus(app);
+    return true;
+  }
+
+  toast("No application found for this account. Please sign up first.");
+  go(role==="cook"?"cookGate":"riderGate");
+  return true;
 }
-function placeOrder(){if(!customerConn?.open){toast("Connect to the Cook first");return;}const order={id:"KB"+Math.floor(10000+Math.random()*89999),createdAt:Date.now(),items:cart.map(x=>({name:x.name,price:x.price})),total:cartTotal()+2.5,status:"placed"};testOrder=order;$("orderNumber").textContent="Order #"+order.id;customerConn.send({type:"new_order",order});renderCustomerOrderBanner();cart=[];go("orderConfirmed");toast("Order sent to Cook ✓");}
-function setupCook(){
- $("newOrderCard").innerHTML=`<div class="job-top"><b>Order #KB12345</b><span>10:05 AM</span></div>
- <p style="font-size:9px"><b>Mak Cik Siti</b> · 1.2 km</p>
- <div class="order-items">Nasi Lemak Ayam <b style="float:right">x1&nbsp; $6.00</b><br>Mee Siam <b style="float:right">x1&nbsp; $5.50</b><br><b>Total</b><b style="float:right">$14.00</b></div>
- <div class="accept-row"><button class="green" onclick="go('findRider')">Accept Order</button><button class="decline" onclick="toast('Order declined')">Decline</button></div>`;
+
+// On app load, if there's already a session, silently check both roles and
+// jump straight to the right dashboard — no home screen, no role picking.
+async function autoRouteReturningPartner(){
+  if(!kbAuthReady())return false;
+  const user=await kbGetUser();
+  if(!user)return false;
+
+  const merchant=await findApprovedPartner("merchants",user);
+  if(merchant){enterCookDashboard(merchant);return true;}
+
+  const rider=await findApprovedPartner("riders",user);
+  if(rider){enterRiderDashboard(rider);return true;}
+
+  const cookApp=await findApplication("cook_applications",user);
+  if(cookApp){showCookApplicationStatus(cookApp);return true;}
+
+  const riderApp=await findApplication("rider_applications",user);
+  if(riderApp){showRiderApplicationStatus(riderApp);return true;}
+
+  return false; // signed in, but no application/account tied to this account
 }
-function findRider(){toast("Searching riders within 3 km…");setTimeout(()=>go("riderFound"),650);}
-renderHome();renderCooks();setupCook();
+
+function showCookApplicationStatus(app){
+  go("cookAccess");
+  const reapplyBtn=document.querySelector("#cookAccess .text-orange");
+  if(app.status==="rejected"){
+    $("cookAccessTitle").textContent="Application Not Approved";
+    $("cookAccessStatus").textContent="Your Cook application was not approved. Contact Kopi Boy support, or you can submit a new application below.";
+    reapplyBtn?.classList.remove("hidden");
+  }else{
+    $("cookAccessTitle").textContent="Application Pending";
+    $("cookAccessStatus").textContent="Application submitted. Waiting for management approval — you'll be notified once it's reviewed.";
+    reapplyBtn?.classList.add("hidden");
+  }
+}
+
+function showRiderApplicationStatus(app){
+  go("riderAccess");
+  const reapplyBtn=document.querySelector("#riderAccess .text-orange");
+  if(app.status==="rejected"){
+    $("riderAccessTitle").textContent="Application Not Approved";
+    $("riderAccessStatus").textContent="Your Rider application was not approved. Contact Kopi Boy support, or you can submit a new application below.";
+    reapplyBtn?.classList.remove("hidden");
+  }else{
+    $("riderAccessTitle").textContent="Application Pending";
+    $("riderAccessStatus").textContent="Application submitted. Waiting for management approval — you'll be notified once it's reviewed.";
+    reapplyBtn?.classList.add("hidden");
+  }
+}
+
+async function enterCookDashboard(data){
+  currentCook=data;
+  $("cookName").textContent=data.name+" · Cook";
+  renderCookProfile();
+  go("cookDashboard");
+  initCook();
+  loadMenu();
+  await showPartnerNotifications();
+}
+
+function toggleSfaFields(){
+  $("sfaFields").classList.toggle("hidden",!$("cookSfaLicensed").checked);
+}
+
+async function submitCookApplication(){
+  const ack=$("cookComplianceAck").checked;
+  if(!ack)return toast("Please acknowledge the food-safety requirements");
+
+  const email=$("cookEmail").value.trim().toLowerCase();
+  if(!email||!email.includes("@"))return toast("A valid email address is required");
+
+  // Sign-up no longer requires an existing Google/Facebook session — the
+  // typed email is what links this application to their account once they
+  // sign in later, after approval.
+  const user=kbAuthReady()?await kbGetUser():null;
+
+  const p={
+    user_id:user?.id||null,
+    email,
+    full_name:$("cookFullName").value.trim(),
+    status:"pending",
+    display_name:$("cookDisplayName").value.trim(),
+    phone:$("cookPhone").value.trim(),
+    food_type:$("cookType").value.trim(),
+    bio:$("cookBio").value.trim(),
+    operating_start:$("cookOpen").value,
+    operating_end:$("cookClose").value,
+    daily_capacity:Number($("cookCapacity").value||20),
+    service_area:$("cookArea").value.trim(),
+    service_postal_codes:$("cookPostalCodes").value.trim(),
+    sfa_licensed:$("cookSfaLicensed").checked,
+    sfa_licence_type:$("cookSfaLicenceType").value.trim(),
+    sfa_licence_number:$("cookSfaLicenceNumber").value.trim(),
+    sfa_licence_expiry:$("cookSfaLicenceExpiry").value||null,
+    sfa_document_name:$("cookSfaDocument").files?.[0]?.name||null,
+    compliance_ack:true,
+    compliance_ack_version:"2026-08-21",
+    compliance_ack_at:new Date().toISOString(),
+    status:"pending"
+  };
+
+  if(!p.full_name||!p.display_name||!p.phone)return toast("Name, kitchen name and phone required");
+  if(p.sfa_licensed&&!p.sfa_licence_number)return toast("Enter the SFA licence number or untick the licence box");
+
+  const {data:saved,error}=await supabase.from("cook_applications").insert(p).select().single();
+  if(error)return toast(error.message);
+
+  showCookApplicationStatus(saved);
+  toast("Application submitted ✓");
+}
+
+function renderCookProfile(){
+  $("cookProfileContent").innerHTML=`<div class="profile-card"><div class="profile-icon">👨‍🍳</div><h2>${esc(currentCook.name)}</h2><p>${esc(currentCook.type||"Local Food")}</p><div class="profile-grid"><span>Orders</span><b>${esc(currentCook.order_open||"--")}–${esc(currentCook.order_close||"--")}</b><span>Cooking</span><b>${esc(currentCook.operating_start||"--")}–${esc(currentCook.operating_end||"--")}</b><span>Capacity</span><b>${currentCook.daily_capacity||"--"} pax</b></div><p>${esc(currentCook.bio||"")}</p><button class="orange full" onclick="go('cookMenu')">MANAGE TODAY'S MENU</button></div>`;
+}
+
+function timeline(o){
+  return `<div class="timeline">${[["placed_at","Order placed"],["accepted_at","Cook accepted"],["rider_requested_at","Looking for rider"],["rider_accepted_at","Rider accepted"],["cooking_at","Cooking"],["ready_at","Food ready"],["picked_up_at","Collected"],["delivered_at","Delivered"]].map(([f,l])=>`<div class="timeline-row ${o[f]?"done":""}"><b>${l}</b><span>${o[f]?new Date(o[f]).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"Waiting"}</span></div>`).join("")}</div>`;
+}
+
+function cookAction(o){
+  if(o.status==="placed")return `<button class="green full" onclick="cookStatus('${o.id}','accepted')">ACCEPT ORDER</button><button class="decline full" onclick="cookStatus('${o.id}','declined')">DECLINE</button>`;
+  if(o.status==="accepted")return `<button class="orange full" onclick="cookStatus('${o.id}','looking_for_rider')">FIND RIDER</button>`;
+  if(o.status==="rider_accepted")return `<button class="green full" onclick="cookStatus('${o.id}','cooking')">START COOKING</button>`;
+  if(o.status==="cooking")return `<button class="green full" onclick="cookStatus('${o.id}','ready')">FOOD READY</button>`;
+  return "";
+}
+
+function renderCookOrder(o){
+  $("incomingOrderArea").innerHTML=`<div class="incoming-order"><div style="display:flex;justify-content:space-between"><h3>🔔 ${statusLabel(o.status)}</h3><span class="status-pill ${o.status}">${o.status}</span></div><div>${o.order_number}</div><div class="incoming-items">${(o.items||[]).map(x=>`${esc(x.name)} <b style="float:right">x${x.qty||1} · $${Number(x.price).toFixed(2)}</b>`).join("<br>")}<hr><b>Total</b><b style="float:right">$${Number(o.total).toFixed(2)}</b></div>${o.rider_name?`<div class="job-line"><span>Rider</span><b>🛵 ${esc(o.rider_name)}</b></div>`:""}${timeline(o)}${cookAction(o)}</div>`;
+}
+
+async function initCook(){
+  await session();
+  $("cookLiveStatus").textContent="LIVE · receiving orders";
+  if(cookChannel)supabase.removeChannel(cookChannel);
+  cookChannel=supabase.channel("cook-"+currentCook.id)
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"orders",filter:`merchant_id=eq.${currentCook.id}`},p=>{renderCookOrder(p.new);toast("🔔 New order received");})
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"orders",filter:`merchant_id=eq.${currentCook.id}`},p=>renderCookOrder(p.new))
+    .subscribe();
+}
+
+async function cookStatus(id,status){
+  const patch={status};
+  const now=new Date().toISOString();
+  ({accepted:()=>patch.accepted_at=now,declined:()=>patch.declined_at=now,looking_for_rider:()=>patch.rider_requested_at=now,cooking:()=>patch.cooking_at=now,ready:()=>patch.ready_at=now}[status]?.());
+  const {data,error}=await supabase.from("orders").update(patch).eq("id",id).select().single();
+  if(error)return toast(error.message);
+  renderCookOrder(data);
+  toast(statusLabel(status)+" ✓");
+}
+
+async function loadMenu(){
+  if(!currentCook)return;
+  const {data}=await supabase.from("merchants").select("*").eq("id",currentCook.id).single();
+  if(data)currentCook=data;
+  $("menuNote").value=currentCook.menu_note||"";
+  $("orderOpen").value=currentCook.order_open||"09:00";
+  $("orderClose").value=currentCook.order_close||"14:00";
+  $("cookStart").value=currentCook.operating_start||"10:00";
+  $("cookEnd").value=currentCook.operating_end||"16:00";
+  updateToggle();
+  loadDishes();
+}
+
+function updateToggle(){
+  $("menuStatusTitle").textContent=currentCook.menu_live===false?"Menu is OFF":"Menu is live";
+  $("menuToggle").textContent=currentCook.menu_live===false?"OFF":"ON";
+  $("menuToggle").className="toggle "+(currentCook.menu_live===false?"off":"on");
+  $("menuStatusText").textContent=currentCook.menu_live===false?"Customers cannot order":`Orders ${currentCook.order_open||"--"}–${currentCook.order_close||"--"}`;
+}
+
+async function toggleMenu(){
+  const {data,error}=await supabase.from("merchants").update({menu_live:currentCook.menu_live===false}).eq("id",currentCook.id).select().single();
+  if(error)return toast(error.message);
+  currentCook=data;
+  updateToggle();
+  toast(currentCook.menu_live?"Menu live ✓":"Menu cancelled");
+}
+
+async function saveMenuSettings(){
+  const patch={menu_note:$("menuNote").value.trim(),order_open:$("orderOpen").value,order_close:$("orderClose").value,operating_start:$("cookStart").value,operating_end:$("cookEnd").value};
+  const {data,error}=await supabase.from("merchants").update(patch).eq("id",currentCook.id).select().single();
+  if(error)return toast(error.message);
+  currentCook=data;
+  updateToggle();
+  renderCookProfile();
+  toast("Menu settings saved ✓");
+}
+
+function previewPhoto(e){
+  const f=e.target.files?.[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    selectedPhoto=r.result;
+    $("photoPreview").innerHTML=`<img src="${selectedPhoto}">`;
+    $("photoPreview").classList.remove("hidden");
+  };
+  r.readAsDataURL(f);
+}
+
+async function addDish(){
+  const name=$("dishName").value.trim(),price=Number($("dishPrice").value),pax=Number($("dishPax").value),desc=$("dishDesc").value.trim();
+  if(!name||!Number.isFinite(price)||pax<1)return toast("Dish name, price and pax required");
+  await session();
+  let image_url="kopi-boy-logo.jpg";
+  if(selectedPhoto){
+    const path=`${currentCook.id}/${Date.now()}-${name.toLowerCase().replace(/[^a-z0-9]+/g,"-")}.jpg`;
+    const blob=await(await fetch(selectedPhoto)).blob();
+    const up=await supabase.storage.from("kopi-boy-menu").upload(path,blob,{contentType:"image/jpeg",upsert:true});
+    if(up.error)return toast("Photo upload failed");
+    image_url=supabase.storage.from("kopi-boy-menu").getPublicUrl(path).data.publicUrl;
+  }
+  const {error}=await supabase.from("menu_items").insert({merchant_id:currentCook.id,name,description:desc,price,pax_available:pax,active:true,image_url});
+  if(error)return toast(error.message);
+  $("dishName").value="";
+  $("dishPrice").value="";
+  $("dishPax").value="";
+  $("dishDesc").value="";
+  $("dishPhoto").value="";
+  selectedPhoto="";
+  $("photoPreview").classList.add("hidden");
+  loadDishes();
+  toast("Dish added ✓");
+}
+
+async function loadDishes(){
+  const {data}=await supabase.from("menu_items").select("*").eq("merchant_id",currentCook.id).order("created_at",{ascending:false});
+  $("dishCount").textContent=`${data?.length||0} dishes`;
+  $("dishList").innerHTML=data?.length?data.map(d=>`<div class="manage-dish"><img src="${esc(d.image_url||"kopi-boy-logo.jpg")}"><div class="md-main"><b>${esc(d.name)} · $${Number(d.price).toFixed(2)}</b><small>${d.pax_available} pax · ${d.active?"Visible":"Hidden"}</small></div><div class="md-actions"><button class="pause" onclick="toggleDish('${d.id}',${!d.active})">${d.active?"Hide":"Show"}</button></div></div>`).join(""):"<div class='empty-state'>No dishes published today.</div>";
+  $("cookMenuPreview").innerHTML=data?.filter(d=>d.active).map(d=>`<span class="menu-chip">${esc(d.name)} · $${Number(d.price).toFixed(2)}</span>`).join("")||"<span class='small-note'>No dishes published yet.</span>";
+}
+
+async function toggleDish(id,active){await supabase.from("menu_items").update({active}).eq("id",id);loadDishes();}
+
+async function enterRiderDashboard(data){
+  currentRider=data;
+  $("riderName").textContent=data.name+" · Rider";
+  renderRiderProfile();
+  go("riderDashboard");
+  initRider();
+  loadJobs();
+  await showPartnerNotifications();
+}
+
+async function submitRiderApplication(){
+  const ack=$("riderComplianceAck").checked;
+  if(!ack)return toast("Please acknowledge the rider requirements");
+
+  const email=$("riderEmail").value.trim().toLowerCase();
+  if(!email||!email.includes("@"))return toast("A valid email address is required");
+
+  const user=kbAuthReady()?await kbGetUser():null;
+
+  const p={
+    user_id:user?.id||null,
+    email,
+    full_name:$("riderFullName").value.trim(),
+    status:"pending",
+    phone:$("riderPhone").value.trim(),
+    vehicle_type:$("riderVehicle").value,
+    operating_area:$("riderArea").value.trim(),
+    compliance_ack:true,
+    compliance_ack_version:"2026-08-21",
+    compliance_ack_at:new Date().toISOString(),
+    eligibility_ack:$("riderEligibilityAck").checked,
+    eligibility_ack_at:$("riderEligibilityAck").checked?new Date().toISOString():null,
+    status:"pending"
+  };
+  if(!p.full_name||!p.phone)return toast("Name and phone required");
+  const {data:saved,error}=await supabase.from("rider_applications").insert(p).select().single();
+  if(error)return toast(error.message);
+  showRiderApplicationStatus(saved);
+  toast("Application submitted ✓");
+}
+
+function renderRiderProfile(){
+  $("riderProfileContent").innerHTML=`<div class="profile-card"><div class="profile-icon">🛵</div><h2>${esc(currentRider.name)}</h2><p>${esc(currentRider.vehicle_type||"")}</p><div class="profile-grid"><span>Area</span><b>${esc(currentRider.operating_area||"--")}</b><span>Status</span><b>Approved</b></div></div>`;
+}
+
+async function initRider(){
+  await session();
+  $("riderLiveStatus").textContent="LIVE · looking for delivery jobs";
+  if(riderChannel)supabase.removeChannel(riderChannel);
+  riderChannel=supabase.channel("partner-rider-jobs")
+    .on("postgres_changes",{event:"INSERT",schema:"public",table:"orders"},()=>loadJobs())
+    .on("postgres_changes",{event:"UPDATE",schema:"public",table:"orders"},p=>{loadJobs();if(p.new.rider_id===currentRider.id)renderRiderJob(p.new)})
+    .subscribe();
+}
+
+async function loadJobs(){
+  const {data,error}=await supabase.from("orders").select("*").in("status",["looking_for_rider","accepted"]).is("rider_id",null).order("created_at",{ascending:false});
+  if(error)return;
+  $("jobCount").textContent=data?.length||0;
+  $("riderJobsArea").innerHTML=data?.length?data.map(o=>`<div class="rider-order-card"><h3>🛵 Delivery Request · ${o.order_number}</h3><small>Delivery fee $${Number(o.delivery_fee).toFixed(2)}</small><div class="job-line"><span>Pick up</span><b>Cook</b></div><div class="job-line"><span>Deliver to</span><b>Customer</b></div><button class="green full" onclick="acceptJob('${o.id}')">ACCEPT DELIVERY</button></div>`).join(""):"<div class='rider-order-card'><small>No delivery jobs available right now.</small></div>";
+}
+
+async function acceptJob(id){
+  const {data,error}=await supabase.from("orders").update({status:"rider_accepted",rider_id:currentRider.id,rider_name:currentRider.name,rider_accepted_at:new Date().toISOString()}).eq("id",id).is("rider_id",null).select().single();
+  if(error)return toast("Job already taken");
+  renderRiderJob(data);
+  toast("Delivery accepted ✓");
+}
+
+function renderRiderJob(o){
+  $("riderJobTitle").textContent=o.order_number;
+  $("riderJobContent").innerHTML=`<div class="rider-order-card"><span class="status-pill ${o.status}">${statusLabel(o.status).toUpperCase()}</span><h3>Delivery for ${esc(currentRider.name)}</h3><div class="job-line"><span>Delivery fee</span><b>$${Number(o.delivery_fee).toFixed(2)}</b></div>${timeline(o)}${o.status==="rider_accepted"?`<button class="green full" onclick="riderStatus('${o.id}','cooking')">CONFIRM — WAITING FOR FOOD</button>`:""}${o.status==="ready"?`<button class="green full" onclick="riderStatus('${o.id}','out_for_delivery')">I'VE COLLECTED THE FOOD</button>`:""}${o.status==="out_for_delivery"?`<button class="green full" onclick="riderStatus('${o.id}','delivered')">DELIVERED TO CUSTOMER</button>`:""}</div>`;
+  go("riderJob");
+}
+
+async function riderStatus(id,status){
+  const p={status};
+  if(status==="out_for_delivery")p.picked_up_at=new Date().toISOString();
+  if(status==="delivered")p.delivered_at=new Date().toISOString();
+  const {data,error}=await supabase.from("orders").update(p).eq("id",id).eq("rider_id",currentRider.id).select().single();
+  if(error)return toast(error.message);
+  renderRiderJob(data);
+  toast(statusLabel(status)+" ✓");
+}
+
+/* Kopi Boy authentication foundation */
+window.KB_AUTH_CONFIG={appRole:document.body?.dataset?.app||"unknown",socialProviders:["google","facebook"],phoneOtpReady:true};
+
+function kbAuthReady(){
+  return window.KOPI_SUPABASE_READY&&typeof supabase!=="undefined";
+}
+
+function kbOpenAuth(title){
+  const o=document.getElementById("kbAuthOverlay");
+  if(!o)return;
+  document.getElementById("kbAuthTitle").textContent=title||"Sign in to Kopi Boy";
+  o.classList.remove("hidden");
+}
+
+function kbCloseAuth(){
+  document.getElementById("kbAuthOverlay")?.classList.add("hidden");
+}
+
+async function kbSignIn(provider){
+  if(!kbAuthReady())return toast?.("Kopi Boy database is not connected");
+
+  // Remember that this specific Cook/Rider choice started an OAuth flow.
+  // This is what lets the app route the user to the correct registration page
+  // after Google sends them back to GitHub Pages.
+  sessionStorage.setItem("kb_partner_auth_started","1");
+
+  const redirectTo=window.location.origin+window.location.pathname;
+  const {error}=await supabase.auth.signInWithOAuth({
+    provider,
+    options:{redirectTo}
+  });
+  if(error){
+    sessionStorage.removeItem("kb_partner_auth_started");
+    toast?.(error.message);
+  }
+}
+
+function kbPhoneStart(){
+  document.getElementById("kbPhoneArea")?.classList.remove("hidden");
+}
+
+async function kbSendOtp(){
+  if(!KB_AUTH_CONFIG.phoneOtpReady)return toast?.("Phone OTP will be enabled before public launch.");
+  const phone=document.getElementById("kbPhone")?.value?.trim();
+  if(!phone)return toast?.("Enter your phone number");
+  const {error}=await supabase.auth.signInWithOtp({phone});
+  if(error)return toast?.(error.message);
+  document.getElementById("kbOtp")?.classList.remove("hidden");
+  document.getElementById("kbVerifyBtn")?.classList.remove("hidden");
+  toast?.("OTP sent");
+}
+
+async function kbVerifyOtp(){
+  const phone=document.getElementById("kbPhone")?.value?.trim(),token=document.getElementById("kbOtp")?.value?.trim();
+  if(!phone||!token)return toast?.("Enter the phone number and OTP");
+  const {error}=await supabase.auth.verifyOtp({phone,token,type:"sms"});
+  if(error)return toast?.(error.message);
+  kbCloseAuth();
+  toast?.("Verified ✓");
+
+  // Same as Google/Facebook sign-in: once verified, route straight to the
+  // right dashboard/status screen using whichever role was pending.
+  const pendingRole=localStorage.getItem("kb_partner_pending_role");
+  if(pendingRole && typeof routeSignedInPartner==="function"){
+    const user=await kbGetUser();
+    if(user){
+      localStorage.removeItem("kb_partner_pending_role");
+      await routeSignedInPartner(user,pendingRole);
+    }
+  }
+}
+
+async function kbGetUser(){
+  if(!kbAuthReady())return null;
+  const {data:{user}}=await supabase.auth.getUser();
+  return user||null;
+}
+
+async function finishPartnerOAuth(){
+  const pendingRole=localStorage.getItem("kb_partner_pending_role");
+  const authStarted=sessionStorage.getItem("kb_partner_auth_started")==="1";
+
+  if(!pendingRole || !authStarted || !kbAuthReady()) return false;
+
+  const user=await kbGetUser();
+  if(!user) return false;
+
+  currentRole=pendingRole;
+  localStorage.removeItem("kb_partner_pending_role");
+  sessionStorage.removeItem("kb_partner_auth_started");
+
+  kbCloseAuth();
+
+  // Remove OAuth callback parameters without reloading the app.
+  if(window.location.search || window.location.hash){
+    history.replaceState({},document.title,window.location.pathname);
+  }
+
+  // Now that we're signed in, check if this Google account is already an
+  // approved partner or has a pending/rejected application on file, and
+  // route straight there instead of always dropping into the apply form.
+  await routeSignedInPartner(user,currentRole);
+
+  toast("Google account verified ✓");
+  return true;
+}
+
+// Show any unread "approved"/"rejected" notifications for this partner the
+// moment they land on their dashboard, then mark them as read.
+async function showPartnerNotifications(){
+  const user=await kbGetUser();
+  if(!user)return;
+  const {data,error}=await supabase.from("partner_notifications")
+    .select("*").eq("recipient_user_id",user.id).eq("read",false).order("created_at",{ascending:true});
+  if(error||!data?.length)return;
+  for(const n of data){
+    toast(n.title+" — "+n.message);
+  }
+  const ids=data.map(n=>n.id);
+  await supabase.from("partner_notifications").update({read:true}).in("id",ids);
+}
+
+// Supabase may finish the OAuth callback AFTER DOMContentLoaded.
+// Listen for the authentication event so the selected role is never lost.
+function setupPartnerAuthListener(){
+  if(!kbAuthReady()) return;
+
+  supabase.auth.onAuthStateChange(async(event,session)=>{
+    if(event==="SIGNED_IN" && session){
+      // Let Supabase finish updating its session before reading the user.
+      setTimeout(()=>finishPartnerOAuth(),0);
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded",async()=>{
+  setupPartnerAuthListener();
+
+  // If we just came back from an OAuth redirect with a pending role, let
+  // that flow own the routing.
+  const cameFromOAuth=await finishPartnerOAuth();
+  if(cameFromOAuth)return;
+
+  // Covers providers/configurations where the session is already available
+  // by the time the page finishes loading (delayed OAuth completion).
+  setTimeout(async()=>{
+    const handled=await finishPartnerOAuth();
+    if(handled)return;
+    // No pending OAuth flow — if there's already a session (returning
+    // partner), skip the home screen and go straight to their dashboard.
+    await autoRouteReturningPartner();
+  },150);
+});
