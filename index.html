@@ -1,207 +1,115 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#17100b">
-<title>Kopi Boy — Prototype</title>
-<link rel="stylesheet" href="styles.css">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17100b"><title>Kopi Boy Partner</title><link rel="stylesheet" href="styles.css">
 </head>
+<body data-app="partner">
+<div class="app-shell"><section class="app">
+  <div class="phone-head"><button class="icon-btn" onclick="go('home')">‹</button><div class="wordmark"><span class="mini-cup">☕</span> KOPI <b>BOY</b></div><button class="icon-btn" onclick="toast('Partner notifications')">♧</button></div>
 
-<body>
-<div class="brand-logo-wrap"><img class="brand-logo" src="kopi-boy-logo.jpg" alt="Kopi Boy"></div>
-
-<div class="app-shell">
-
-  <!-- CUSTOMER -->
-  <section class="app" id="customerApp">
-    <div class="phone-head">
-      <button class="icon-btn" onclick="back()">‹</button>
-      <div class="wordmark"><span class="mini-cup">☕</span> KOPI <b>BOY</b></div>
-      <button class="icon-btn bell" onclick="toast('No new notifications')">♧<i>2</i></button>
+  <div class="screen active cream-screen" id="home">
+    <div class="access-card" style="margin-top:20px;padding:28px 18px">
+      <div class="access-icon">🤝</div><h2>Kopi Boy Partner</h2><p>One partner app for cooks and riders.</p>
+      <button class="green full" onclick="go('cookGate')" style="font-size:16px">👨‍🍳 I AM A COOK</button>
+      <button class="orange full" onclick="go('riderGate')" style="font-size:16px;margin-top:8px">🛵 I AM A RIDER</button>
     </div>
-
-    <div class="screen active" id="customerHome">
-      <div class="test-connect"><div><b>Test with your Cook</b><small>Enter the Cook Test Code to connect this phone.</small></div><div class="connect-row"><input id="customerRoomCode" maxlength="6" placeholder="6-digit code"><button class="orange" onclick="connectCustomer()">CONNECT</button></div><span id="customerConnectionStatus" class="conn-status">Not connected</span></div><div class="location">⌖ Singapore ▾</div>
-      <div class="hero-card">
-        <div class="hero-copy">
-          <h1>Local Food,<br><span>Made with Heart,</span><br>Delivered with Care.</h1>
-          <button onclick="go('cookList')">Order Now</button>
-        </div>
-        <div class="hero-photo"></div>
-      </div>
-
-      <div class="searchbar">
-        <span>⌕</span><input id="search" placeholder="Search for food or home cook..." oninput="filterCooks()">
-        <button>☷</button>
-      </div>
-
-      <div class="section-title"><b>Popular Near You</b><button onclick="go('cookList')">See All</button></div>
-      <div class="popular-grid" id="popularGrid"></div>
-    </div>
-
-    <div class="screen cream-screen" id="cookList">
-      <div class="screen-title"><button class="back-small" onclick="go('customerHome')">‹</button><b>Home Cooks Near You</b><button>☷</button></div>
-      <div class="cook-list" id="cookListItems"></div>
-    </div>
-
-    <div class="screen cream-screen" id="menuScreen">
-      <div id="menuContent"></div>
-    </div>
-
-    <div class="screen cream-screen" id="orderSummary">
-      <div class="screen-title"><button class="back-small" onclick="go('menuScreen')">‹</button><b>Your Order</b><span></span></div>
-      <div id="summaryContent"></div>
-    </div>
-
-    <div class="screen cream-screen" id="orderConfirmed">
-      <div class="confirm-head">
-        <div class="confirm-check">✓</div>
-        <h2>Thank you!</h2>
-        <p>Your order has been placed.</p>
-        <strong id="orderNumber">Order #KB12345</strong>
-      </div>
-      <div class="seller-mini" id="confirmedSeller"></div>
-      <div class="timeline">
-        <div class="timeline-row done"><span>✓</span><b>Order Placed</b><small>Just now</small></div>
-        <div class="timeline-row"><span>•</span><b>Cooking</b><small>Pending</small></div>
-        <div class="timeline-row"><span>•</span><b>Finding Rider</b><small>—</small></div>
-        <div class="timeline-row"><span>•</span><b>On the Way</b><small>—</small></div>
-        <div class="timeline-row"><span>•</span><b>Delivered</b><small>—</small></div>
-      </div>
-      <button class="orange full" onclick="go('customerHome')">View Order Details</button>
-    </div>
-
-    <div class="screen cream-screen" id="customerLiveOrder"><div class="screen-title"><button class="back-small" onclick="go('customerHome')">‹</button><b>Live Order</b><span></span></div><div id="customerLiveOrderContent"></div></div><nav class="bottom-nav">
-      <button class="selected" onclick="go('customerHome')">⌂<small>Home</small></button>
-      <button onclick="toast('Orders')">▣<small>Orders</small></button>
-      <button onclick="toast('Messages')">▤<small>Messages</small></button>
-      <button onclick="toast('Profile')">♙<small>Profile</small></button>
-    </nav>
-  </section>
-
-  <!-- COOK -->
-  <section class="app hidden" id="cookApp">
-    <div class="phone-head">
-      <button class="icon-btn" onclick="back()">‹</button>
-      <div class="wordmark"><span class="mini-cup">☕</span> KOPI <b>BOY</b></div>
-      <button class="icon-btn bell">♧<i>2</i></button>
-    </div>
-
-    <div class="screen active" id="cookDashboard">
-      <div class="dashboard-heading"><div><small>KOPI BOY</small><h2>Cook Dashboard</h2></div><button class="icon-btn">♧</button></div>
-      <div class="tabs"><button class="active">New Orders <i>1</i></button><button>Ongoing</button><button>History</button></div>
-<div class="connection-card">
-  <div class="connection-head">
-    <div><small>KOPI BOY TEST</small><h3>Customer Connection</h3></div>
-    <span id="cookConnectionStatus" class="connection-dot offline">OFFLINE</span>
   </div>
-  <p>Start the Cook test to generate a code for your customer.</p>
-  <div class="room-code" id="cookRoomCode">------</div>
-  <button class="mini-orange full" onclick="startCookConnection()">START COOK TEST</button>
-</div>
 
-      <div id="incomingOrderArea"></div><div class="order-card" id="newOrderCard"></div>
-      <div class="how-card"><b>How it works</b><ol><li>Accept order &amp; start cooking</li><li>When ready, tap <b>FIND RIDER</b></li><li>Rider delivers to customer</li><li>You receive payment directly</li></ol></div>
+  <div class="screen cream-screen" id="cookGate">
+    <div class="screen-title"><button class="back-small" onclick="go('home')">‹</button><b>Cook Partner</b><span></span></div>
+    <div class="access-card">
+      <div class="access-icon">👨‍🍳</div><h2>Welcome, Cook</h2><p>Already approved? Sign in below. New here? Sign up to apply.</p>
+      <button class="kb-google" onclick="signInPartner('cook')" style="margin-top:14px"><span style="display:inline-flex;align-items:center;gap:8px;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.23c0-.79-.07-1.55-.2-2.27H12v4.3h5.23a4.47 4.47 0 0 1-1.94 2.93v2.43h3.14c1.84-1.7 2.92-4.2 2.92-7.39z"/><path fill="#34A853" d="M12 21.8c2.63 0 4.84-.87 6.45-2.35l-3.14-2.43c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.3v2.51A9.75 9.75 0 0 0 12 21.8z"/><path fill="#FBBC05" d="M6.54 13.91A5.86 5.86 0 0 1 6.23 12c0-.66.11-1.3.31-1.91V7.58H3.3A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.05 1.05 4.42l3.24-2.51z"/><path fill="#EA4335" d="M12 6.06c1.43 0 2.72.49 3.73 1.46l2.8-2.8C16.84 3.05 14.63 2.2 12 2.2a9.75 9.75 0 0 0-8.7 5.38l3.24 2.51c.77-2.31 2.92-4.03 5.46-4.03z"/></svg>Sign in with Google</span></button>
+      <button class="kb-facebook" onclick="signInPartner('cook')" style="margin-top:8px"><span style="display:inline-flex;align-items:center;gap:8px;justify-content:center"><span style="font:bold 20px Arial">f</span>Sign in with Facebook</span></button>
+      <button class="green full" onclick="go('cookApply')" style="margin-top:14px">SIGN UP AS A COOK</button>
     </div>
-
-    <div class="screen" id="findRider">
-      <div class="screen-title dark"><button class="back-small" onclick="go('cookDashboard')">‹</button><b>Order #KB12345</b><span></span></div>
-      <div class="progress"><span class="done">✓</span><span class="done">✓</span><span class="current">♙</span><span>+</span></div>
-      <div class="progress-label"><span>Cooking</span><span>Ready</span><span>Find Rider</span><span>On the Way</span></div>
-      <div class="ready-card">
-        <div class="rider-illustration">🛵</div>
-        <h2>Order is ready!</h2>
-        <p>Let's find a rider to deliver.</p>
-        <div class="radius-box">⚙ Rider search area: 3 km around you</div>
-      </div>
-      <button class="orange full" onclick="findRider()">FIND RIDER NOW</button>
-      <button class="text-orange full" onclick="toast('Order remains ready')">Cancel Order</button>
-    </div>
-
-    <div class="screen" id="riderFound">
-      <div class="screen-title dark"><button class="back-small" onclick="go('findRider')">‹</button><b>Rider Found</b><span></span></div>
-      <div class="rider-found-card">
-        <div class="rider-avatar">🏍️</div>
-        <h2>Ahmad is coming</h2>
-        <p>★ 4.9 · 1.1 km away · ETA 7 min</p>
-        <button class="green full">MESSAGE RIDER</button>
-      </div>
-      <div class="pay-card"><b>Delivery fee</b><strong>$2.50</strong><p>When Ahmad collects the food, scan his Kopi Boy QR and pay him directly.</p><button class="orange full" onclick="go('riderPay')">VIEW RIDER QR</button></div>
-    </div>
-
-    <div class="screen" id="riderPay">
-      <div class="screen-title dark"><button class="back-small" onclick="go('riderFound')">‹</button><b>Pay Rider</b><span></span></div>
-      <div class="qr-card">
-        <div class="fake-qr">▦</div>
-        <h2>Ahmad · Rider</h2><strong>$2.50</strong>
-        <p>Scan the rider's QR with your banking app. Payment goes directly to the rider.</p>
-        <button class="green full" onclick="toast('Rider payment recorded');go('cookDashboard')">I HAVE PAID THE RIDER</button>
-      </div>
-    </div>
-
-    <nav class="bottom-nav">
-      <button class="selected" onclick="go('cookDashboard')">▣<small>Orders</small></button>
-      <button onclick="go('findRider')">♙<small>Find Rider</small></button>
-      <button onclick="toast('Earnings')">◉<small>Earnings</small></button>
-      <button onclick="toast('Profile')">♙<small>Profile</small></button>
-    </nav>
-  </section>
-
-  <!-- RIDER -->
-  <section class="app hidden" id="riderApp">
-    <div class="phone-head">
-      <button class="icon-btn" onclick="back()">‹</button>
-      <div class="wordmark"><span class="mini-cup">☕</span> KOPI <b>BOY</b></div>
-      <button class="icon-btn bell">♧<i>1</i></button>
-    </div>
-    <div class="screen active" id="riderDashboard">
-      <div class="dashboard-heading"><div><small>KOPI BOY</small><h2>Rider Dashboard</h2></div><button class="icon-btn">♧</button></div>
-      <div class="tabs"><button class="active">New Jobs <i>1</i></button><button>Ongoing</button><button>History</button></div>
-      <div class="rider-job-card">
-        <div class="job-top"><b>New Delivery</b><span>10:12 AM</span></div>
-        <div class="address"><span>♙</span><div><small>Pick up from</small><b>Mak Cik Siti</b><em>1.2 km</em></div></div>
-        <div class="address"><span>⌖</span><div><small>Deliver to</small><b>Customer</b><em>2.8 km</em></div></div>
-        <div class="job-stat"><span>Total Distance</span><b>4.0 km</b></div>
-        <div class="job-stat"><span>Estimated Pay</span><b>$2.50</b></div>
-        <button class="green full" onclick="go('riderJob')">Accept Job</button>
-        <button class="decline full" onclick="toast('Job declined')">Decline</button>
-      </div>
-      <div class="earnings-card"><span>Earnings Today</span><strong>$32.80</strong><small>3 Jobs Completed</small></div>
-    </div>
-
-    <div class="screen" id="riderJob">
-      <div class="screen-title dark"><button class="back-small" onclick="go('riderDashboard')">‹</button><b>Order #KB12345</b><span></span></div>
-      <div class="rider-job-card">
-        <div class="status-green">✓ Accepted — Pick up now</div>
-        <div class="address"><span>♙</span><div><small>Pick up from</small><b>Mak Cik Siti</b><em>1.2 km</em></div></div>
-        <div class="address"><span>⌖</span><div><small>Deliver to</small><b>Customer</b><em>2.8 km</em></div></div>
-        <div class="direct-pay"><b>Delivery payment</b><strong>$2.50</strong><p>Merchant will PayNow you when you collect the food.</p></div>
-        <button class="green full" onclick="go('riderDelivery')">I've Collected Food</button>
-      </div>
-    </div>
-
-    <div class="screen" id="riderDelivery">
-      <div class="screen-title dark"><button class="back-small" onclick="go('riderJob')">‹</button><b>Deliver Order</b><span></span></div>
-      <div class="rider-found-card">
-        <div class="rider-illustration">📦</div><h2>Food collected ✓</h2><p>Deliver to customer · 2.8 km</p>
-        <button class="orange full" onclick="toast('Delivery completed ✓');go('riderDashboard')">Mark Delivered</button>
-      </div>
-    </div>
-    <nav class="bottom-nav">
-      <button class="selected" onclick="go('riderDashboard')">▣<small>Jobs</small></button>
-      <button onclick="toast('Earnings')">◉<small>Earnings</small></button>
-      <button onclick="toast('Profile')">♙<small>Profile</small></button>
-    </nav>
-  </section>
-
-  <div class="role-switch">
-    <button class="active" onclick="setRole('customerApp')">Customer</button>
-    <button onclick="setRole('cookApp')">Cook</button>
-    <button onclick="setRole('riderApp')">Rider</button>
   </div>
-</div>
+
+  <div class="screen cream-screen" id="riderGate">
+    <div class="screen-title"><button class="back-small" onclick="go('home')">‹</button><b>Rider Partner</b><span></span></div>
+    <div class="access-card">
+      <div class="access-icon">🛵</div><h2>Welcome, Rider</h2><p>Already approved? Sign in below. New here? Sign up to apply.</p>
+      <button class="kb-google" onclick="signInPartner('rider')" style="margin-top:14px"><span style="display:inline-flex;align-items:center;gap:8px;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.23c0-.79-.07-1.55-.2-2.27H12v4.3h5.23a4.47 4.47 0 0 1-1.94 2.93v2.43h3.14c1.84-1.7 2.92-4.2 2.92-7.39z"/><path fill="#34A853" d="M12 21.8c2.63 0 4.84-.87 6.45-2.35l-3.14-2.43c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.3v2.51A9.75 9.75 0 0 0 12 21.8z"/><path fill="#FBBC05" d="M6.54 13.91A5.86 5.86 0 0 1 6.23 12c0-.66.11-1.3.31-1.91V7.58H3.3A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.05 1.05 4.42l3.24-2.51z"/><path fill="#EA4335" d="M12 6.06c1.43 0 2.72.49 3.73 1.46l2.8-2.8C16.84 3.05 14.63 2.2 12 2.2a9.75 9.75 0 0 0-8.7 5.38l3.24 2.51c.77-2.31 2.92-4.03 5.46-4.03z"/></svg>Sign in with Google</span></button>
+      <button class="kb-facebook" onclick="signInPartner('rider')" style="margin-top:8px"><span style="display:inline-flex;align-items:center;gap:8px;justify-content:center"><span style="font:bold 20px Arial">f</span>Sign in with Facebook</span></button>
+      <button class="orange full" onclick="go('riderApply')" style="margin-top:14px">SIGN UP AS A RIDER</button>
+    </div>
+  </div>
+
+  <div class="screen cream-screen" id="cookAccess">
+    <div class="screen-title"><button class="back-small" onclick="go('home')">‹</button><b>Cook Access</b><span></span></div>
+    <div class="access-card"><div class="access-icon">👨‍🍳</div><h2 id="cookAccessTitle">Application Status</h2><p id="cookAccessStatus">For approved cooks, choose your name to enter the Partner dashboard.</p><button class="text-orange hidden" onclick="go('cookApply')">REGISTER AS COOK</button></div>
+  </div>
+
+  <div class="screen cream-screen" id="cookApply">
+    <div class="screen-title"><button class="back-small" onclick="go('cookGate')">‹</button><b>Cook Registration</b><span></span></div>
+    <div class="form-card"><h2>Become a Kopi Boy Cook</h2><p>Submit your details for management approval.</p>
+      <label>Full name<input id="cookFullName" placeholder="Your name"></label>
+      <label>Email address<input id="cookEmail" type="email" placeholder="you@example.com"></label>
+      <label>Kitchen / display name<input id="cookDisplayName" placeholder="e.g. Mak Cik Siti"></label>
+      <label>Phone<input id="cookPhone" placeholder="8XXXXXXX" inputmode="tel"></label>
+      <label>Food type<input id="cookType" value="Home cooked food"></label>
+      <div class="compliance-box"><h3>Food business status</h3><p>Home-based food businesses currently do not require an SFA food-retail licence, but applicable food-safety requirements still apply.</p>
+        <label>Service area / neighbourhood<input id="cookArea" placeholder="e.g. Tampines, Bedok"></label>
+        <label>Service postal codes<input id="cookPostalCodes" placeholder="e.g. 529123, 529456"></label>
+        <label class="check-line"><input type="checkbox" id="cookSfaLicensed" onchange="toggleSfaFields()"> I hold a valid SFA food licence applicable to my food business.</label>
+        <div id="sfaFields" class="hidden"><label>SFA licence type<input id="cookSfaLicenceType" placeholder="Licence type"></label><label>SFA licence number<input id="cookSfaLicenceNumber" placeholder="Licence number"></label><label>Licence expiry<input id="cookSfaLicenceExpiry" type="date"></label><label>SFA document<input id="cookSfaDocument" type="file" accept="image/*,.pdf"></label></div>
+        <label class="check-line required-check"><input type="checkbox" id="cookComplianceAck"> I acknowledge that I am responsible for complying with all applicable Singapore food-safety requirements when preparing and selling food through Kopi Boy.</label>
+      </div>
+      <label>Description<textarea id="cookBio" rows="3" placeholder="Tell customers about your food..."></textarea></label>
+      <div class="two-col"><label>Order opens<input id="cookOpen" type="time" value="09:00"></label><label>Order closes<input id="cookClose" type="time" value="14:00"></label></div>
+      <label>Daily capacity (pax)<input id="cookCapacity" type="number" min="1" value="20"></label>
+      <button class="green full" onclick="submitCookApplication()">SUBMIT COOK APPLICATION</button>
+    </div>
+  </div>
+
+  <div class="screen" id="cookDashboard">
+    <div class="screen-title dark"><button class="back-small" onclick="go('cookAccess')">‹</button><b id="cookName">Cook</b><span></span></div>
+    <div class="live-status-card"><span class="live-dot"></span><div><b id="cookLiveStatus">LIVE · receiving orders</b><small>New customer orders will appear here.</small></div></div>
+    <div id="cookProfileContent"></div><div id="incomingOrderArea"></div>
+    <button class="text-orange full" onclick="go('cookMenu')">MANAGE TODAY'S MENU</button>
+  </div>
+
+  <div class="screen cream-screen" id="cookMenu">
+    <div class="screen-title"><button class="back-small" onclick="go('cookDashboard')">‹</button><b>Today's Menu</b><span></span></div>
+    <div class="form-card"><div class="status-head"><div><b id="menuStatusTitle">Menu is live</b><small id="menuStatusText">Orders 09:00–14:00</small></div><button id="menuToggle" class="toggle on" onclick="toggleMenu()">ON</button></div>
+      <label>Menu note<textarea id="menuNote" rows="2" placeholder="Today's special or notes"></textarea></label>
+      <div class="two-col"><label>Order opens<input id="orderOpen" type="time"></label><label>Order closes<input id="orderClose" type="time"></label></div>
+      <div class="two-col"><label>Cooking starts<input id="cookStart" type="time"></label><label>Cooking ends<input id="cookEnd" type="time"></label></div>
+      <button class="orange full" onclick="saveMenuSettings()">SAVE MENU SETTINGS</button>
+    </div>
+    <div class="form-card"><h3>Add a dish</h3><label>Dish name<input id="dishName" placeholder="Chicken rice"></label><div class="two-col"><label>Price<input id="dishPrice" type="number" step="0.10" placeholder="8.00"></label><label>Pax available<input id="dishPax" type="number" min="1" placeholder="20"></label></div><label>Description<textarea id="dishDesc" rows="2" placeholder="Short description"></textarea></label><label>Dish photo<input id="dishPhoto" type="file" accept="image/*" onchange="previewPhoto(event)"></label><div id="photoPreview" class="photo-preview hidden"></div><button class="green full" onclick="addDish()">ADD DISH</button></div>
+    <div class="cook-menu-card"><div class="status-head"><b>Published dishes</b><small id="dishCount">0 dishes</small></div><div id="dishList"></div><div class="live-menu-card"><b>Customer preview</b><div id="cookMenuPreview" style="margin-top:7px"></div></div></div>
+  </div>
+
+  <div class="screen cream-screen" id="riderAccess">
+    <div class="screen-title"><button class="back-small" onclick="go('home')">‹</button><b>Rider Access</b><span></span></div>
+    <div class="access-card"><div class="access-icon">🛵</div><h2 id="riderAccessTitle">Application Status</h2><p id="riderAccessStatus">For approved riders, choose your name to enter the Partner dashboard.</p><button class="text-orange hidden" onclick="go('riderApply')">REGISTER AS RIDER</button></div>
+  </div>
+
+  <div class="screen cream-screen" id="riderApply">
+    <div class="screen-title"><button class="back-small" onclick="go('riderGate')">‹</button><b>Rider Registration</b><span></span></div>
+    <div class="form-card"><h2>Become a Kopi Boy Rider</h2><p>Submit your details for management approval.</p><label>Full name<input id="riderFullName" placeholder="Your full name"></label><label>Email address<input id="riderEmail" type="email" placeholder="you@example.com"></label><label>Phone<input id="riderPhone" placeholder="8XXXXXXX" inputmode="tel"></label><label>Vehicle<select id="riderVehicle"><option>Motorcycle</option><option>Bicycle</option><option>Car</option></select></label><label>Operating area<input id="riderArea" placeholder="e.g. Tampines, Bedok"></label><div class="compliance-box"><label class="check-line required-check"><input type="checkbox" id="riderComplianceAck"> I acknowledge that I am responsible for following applicable rider, road-safety and delivery requirements.</label><label class="check-line"><input type="checkbox" id="riderEligibilityAck"> I confirm that I meet the eligibility requirements for the vehicle I selected.</label></div><button class="orange full" onclick="submitRiderApplication()">SUBMIT RIDER APPLICATION</button></div>
+  </div>
+
+  <div class="screen" id="riderDashboard">
+    <div class="screen-title dark"><button class="back-small" onclick="go('riderAccess')">‹</button><b id="riderName">Rider</b><span></span></div>
+    <div class="rider-live-status"><small>LIVE STATUS</small><b id="riderLiveStatus">LIVE · looking for delivery jobs</b></div>
+    <div class="profile-card" id="riderProfileContent"></div>
+    <div class="live-workflow-card"><div class="workflow-head"><div><small>AVAILABLE JOBS</small><h3>Delivery requests</h3></div><span class="status-pill accepted" id="jobCount">0</span></div><p>Only orders that are waiting for a rider are shown.</p></div>
+    <div id="riderJobsArea"></div>
+  </div>
+
+  <div class="screen cream-screen" id="riderJob"><div class="screen-title"><button class="back-small" onclick="go('riderDashboard')">‹</button><b id="riderJobTitle">Delivery</b><span></span></div><div id="riderJobContent"></div></div>
+</section></div>
 <div id="toast"></div>
-<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script><script src="app.js"></script>
-</body>
-</html>
+
+<div id="kbAuthOverlay" class="kb-auth-overlay hidden"><div class="kb-auth-card"><div class="kb-auth-logo">☕</div><h2 id="kbAuthTitle">Sign in to Kopi Boy</h2><p id="kbAuthSubtitle">Use your account to continue.</p>
+  <button class="kb-google" onclick="kbSignIn('google')"><span style="display:inline-flex;align-items:center;gap:8px;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.23c0-.79-.07-1.55-.2-2.27H12v4.3h5.23a4.47 4.47 0 0 1-1.94 2.93v2.43h3.14c1.84-1.7 2.92-4.2 2.92-7.39z"/><path fill="#34A853" d="M12 21.8c2.63 0 4.84-.87 6.45-2.35l-3.14-2.43c-.87.58-1.98.92-3.31.92-2.54 0-4.69-1.72-5.46-4.03H3.3v2.51A9.75 9.75 0 0 0 12 21.8z"/><path fill="#FBBC05" d="M6.54 13.91A5.86 5.86 0 0 1 6.23 12c0-.66.11-1.3.31-1.91V7.58H3.3A9.75 9.75 0 0 0 2.25 12c0 1.57.38 3.05 1.05 4.42l3.24-2.51z"/><path fill="#EA4335" d="M12 6.06c1.43 0 2.72.49 3.73 1.46l2.8-2.8C16.84 3.05 14.63 2.2 12 2.2a9.75 9.75 0 0 0-8.7 5.38l3.24 2.51c.77-2.31 2.92-4.03 5.46-4.03z"/></svg>Continue with Google</span></button>
+  <button class="kb-facebook" onclick="kbSignIn('facebook')"><span style="display:inline-flex;align-items:center;gap:8px;justify-content:center"><span style="font:bold 20px Arial">f</span>Continue with Facebook</span></button>
+  <button class="kb-phone" onclick="kbPhoneStart()">Continue with Phone</button>
+  <div id="kbPhoneArea" class="hidden"><input id="kbPhone" placeholder="+65 8XXX XXXX"><button class="kb-phone" onclick="kbSendOtp()">Send OTP</button><input id="kbOtp" class="hidden" placeholder="6-digit OTP" maxlength="6"><button id="kbVerifyBtn" class="kb-phone hidden" onclick="kbVerifyOtp()">Verify OTP</button></div>
+  <small>Enter your registered phone number to receive a one-time code.</small>
+</div></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="supabase-config.js"></script><script src="app.js"></script>
+</body></html>
