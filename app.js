@@ -123,9 +123,21 @@ async function routeSignedInPartner(user,role){
     return true;
   }
 
-  toast("No application found for this account. Please sign up first.");
-  go(role==="cook"?"cookGate":"riderGate");
+  // No account and no application on file — instead of bouncing them back
+  // with just a toast, take them straight into the application form with
+  // their verified phone/email already filled in, so signing in with OTP
+  // (or Google/Facebook) doubles as the start of registration.
+  go(role==="cook"?"cookApply":"riderApply");
+  prefillApplicationIdentity(role,user);
+  toast("Let's get you registered ✓");
   return true;
+}
+
+function prefillApplicationIdentity(role,user){
+  const emailField=$(role==="cook"?"cookEmail":"riderEmail");
+  const phoneField=$(role==="cook"?"cookPhone":"riderPhone");
+  if(emailField && user.email && !emailField.value)emailField.value=user.email;
+  if(phoneField && user.phone && !phoneField.value)phoneField.value=user.phone;
 }
 
 // On app load, if there's already a session, silently check both roles and
@@ -197,16 +209,20 @@ async function submitCookApplication(){
   if(!ack)return toast("Please acknowledge the food-safety requirements");
 
   const email=$("cookEmail").value.trim().toLowerCase();
-  if(!email||!email.includes("@"))return toast("A valid email address is required");
+  // Email is required only if they don't already have a verified phone on
+  // file (e.g. via OTP sign-in) — someone registering with phone OTP has
+  // no email to give, and shouldn't be blocked by this.
+  const user=kbAuthReady()?await kbGetUser():null;
+  if(!email && !user?.phone)return toast("A valid email address is required");
+  if(email && !email.includes("@"))return toast("A valid email address is required");
 
   // Sign-up no longer requires an existing Google/Facebook session — the
   // typed email is what links this application to their account once they
   // sign in later, after approval.
-  const user=kbAuthReady()?await kbGetUser():null;
 
   const p={
     user_id:user?.id||null,
-    email,
+    email:email||null,
     full_name:$("cookFullName").value.trim(),
     status:"pending",
     display_name:$("cookDisplayName").value.trim(),
@@ -378,13 +394,13 @@ async function submitRiderApplication(){
   if(!ack)return toast("Please acknowledge the rider requirements");
 
   const email=$("riderEmail").value.trim().toLowerCase();
-  if(!email||!email.includes("@"))return toast("A valid email address is required");
-
   const user=kbAuthReady()?await kbGetUser():null;
+  if(!email && !user?.phone)return toast("A valid email address is required");
+  if(email && !email.includes("@"))return toast("A valid email address is required");
 
   const p={
     user_id:user?.id||null,
-    email,
+    email:email||null,
     full_name:$("riderFullName").value.trim(),
     status:"pending",
     phone:$("riderPhone").value.trim(),
