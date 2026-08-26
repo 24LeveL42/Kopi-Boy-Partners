@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17100b">
+<title>Kopi Boy — Prototype</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+<div class="brand-logo-wrap"><img class="brand-logo" src="kopi-boy-logo.jpg" alt="Kopi Boy"></div>
+
+<div class="app-shell">
+
+  <!-- CUSTOMER -->
+  <section class="app" id="customerApp">
+    <div class="phone-head">
+      <button class="icon-btn" onclick="back()">‹</button>
+      <div class="wordmark"><span class="mini-cup">☕</span> KOPI <b>BOY</b></div>
+      <button class="icon-btn bell" onclick="toast('No new notifications')">♧<i>2</i></button>
+    </div>
+
+    <div class="screen active" id="customerHome">
+      <div class="test-connect"><div><b>Test with your Cook</b><small>Enter the Cook Test Code to connect this phone.</small></div><div class="connect-row"><input id="customerRoomCode" maxlength="6" placeholder="6-digit code"><button class="orange" onclick="connectCustomer()">CONNECT</button></div><span id="customerConnectionStatus" class="conn-status">Not connected</span></div><div class="location">⌖ Singapore ▾</div>
+      <div class="hero-card">
+        <div class="hero-copy">
+          <h1>Local Food,<br><span>Made with Heart,</span><br>Delivered with Care.</h1>
+          <button onclick="go('cookList')">Order Now</button>
+        </div>
+        <div class="hero-photo"></div>
+      </div>
+
+      <div class="searchbar">
+        <span>⌕</span><input id="search" placeholder="Search for food or home cook..." oninput="filterCooks()">
+        <button>☷</button>
+      </div>
+
+      <div class="section-title"><b>Popular Near You</b><button onclick="go('cookList')">See All</button></div>
+      <div class="popular-grid" id="popularGrid"></div>
+    </div>
+
+    <div class="screen cream-screen" id="cookList">
+      <div class="screen-title"><button class="back-small" onclick="go('customerHome')">‹</button><b>Home Cooks Near You</b><button>☷</button></div>
+      <div class="cook-list" id="cookListItems"></div>
+    </div>
+
+    <div class="screen cream-screen" id="menuScreen">
+      <div id="menuContent"></div>
+    </div>
+
+    <div class="screen cream-screen" id="orderSummary">
+      <div class="screen-title"><button class="back-small" onclick="go('menuScreen')">‹</button><b>Your Order</b><span></span></div>
+      <div id="summaryContent"></div>
+    </div>
+
+    <div class="screen cream-screen" id="orderConfirmed">
+      <div class="confirm-head">
+        <div class="confirm-check">✓</div>
+        <h2>Thank you!</h2>
+        <p>Your order has been placed.</p>
+        <strong id="orderNumber">Order #KB12345</strong>
+      </div>
+      <div class="seller-mini" id="confirmedSeller"></div>
+      <div class="timeline">
+        <div class="timeline-row done"><span>✓</span><b>Order Placed</b><small>Just now</small></div>
+        <div class="timeline-row"><span>•</span><b>Cooking</b><small>Pending</small></div>
+        <div class="timeline-row"><span>•</span><b>Finding Rider</b><small>—</small></div>
+        <div class="timeline-row"><span>•</span><b>On the Way</b><small>—</small></div>
+        <div class="timeline-row"><span>•</span><b>Delivered</b><small>—</small></div>
+      </div>
+      <button class="orange full" onclick="go('customerHome')">View Order Details</button>
+    </div>
+
+    <div class="screen cream-screen" id="customerLiveOrder"><div class="screen-title"><button class="back-small" onclick="go('customerHome')">‹</button><b>Live Order</b><span></span></div><div id="customerLiveOrderContent"></div></div><nav class="bottom-nav">
+      <button class="selected" onclick="go('customerHome')">⌂<small>Home</small></button>
+      <button onclick="toast('Orders')">▣<small>Orders</small></button>
+      <button onclick="toast('Messages')">▤<small>Messages</small></button>
+      <button onclick="toast('Profile')">♙<small>Profile</small></button>
+    </nav>
+  </section>
+
+  <!-- COOK -->
+  <section class="app hidden" id="cookApp">
+    <div class="phone-head">
+      <button class="icon-btn" onclick="back()">‹</button>
+      <div class="wordmark"><span class="mini-cup">☕</span> KOPI <b>BOY</b></div>
+      <button class="icon-btn bell">♧<i>2</i></button>
+    </div>
+
+    <div class="screen active" id="cookDashboard">
+      <div class="dashboard-heading"><div><small>KOPI BOY</small><h2>Cook Dashboard</h2></div><button class="icon-btn">♧</button></div>
+      <div class="tabs"><button class="active">New Orders <i>1</i></button><button>Ongoing</button><button>History</button></div>
+<div class="connection-card">
+  <div class="connection-head">
+    <div><small>KOPI BOY TEST</small><h3>Customer Connection</h3></div>
+    <span id="cookConnectionStatus" class="connection-dot offline">OFFLINE</span>
+  </div>
+  <p>Start the Cook test to generate a code for your customer.</p>
+  <div class="room-code" id="cookRoomCode">------</div>
+  <button class="mini-orange full" onclick="startCookConnection()">START COOK TEST</button>
+</div>
+
+      <div id="incomingOrderArea"></div><div class="order-card" id="newOrderCard"></div>
+      <div class="how-card"><b>How it works</b><ol><li>Accept order &amp; start cooking</li><li>When ready, tap <b>FIND RIDER</b></li><li>Rider delivers to customer</li><li>You receive payment directly</li></ol></div>
+    </div>
+
+    <div class="screen" id="findRider">
+      <div class="screen-title dark"><button class="back-small" onclick="go('cookDashboard')">‹</button><b>Order #KB12345</b><span></span></div>
+      <div class="progress"><span class="done">✓</span><span class="done">✓</span><span class="current">♙</span><span>+</span></div>
+      <div class="progress-label"><span>Cooking</span><span>Ready</span><span>Find Rider</span><span>On the Way</span></div>
+      <div class="ready-card">
+        <div class="rider-illustration">🛵</div>
+        <h2>Order is ready!</h2>
+        <p>Let's find a rider to deliver.</p>
+        <div class="radius-box">⚙ Rider search area: 3 km around you</div>
+      </div>
+      <button class="orange full" onclick="findRider()">FIND RIDER NOW</button>
+      <button class="text-orange full" onclick="toast('Order remains ready')">Cancel Order</button>
+    </div>
+
+    <div class="screen" id="riderFound">
+      <div class="screen-title dark"><button class="back-small" onclick="go('findRider')">‹</button><b>Rider Found</b><span></span></div>
+      <div class="rider-found-card">
+        <div class="rider-avatar">🏍️</div>
+        <h2>Ahmad is coming</h2>
+        <p>★ 4.9 · 1.1 km away · ETA 7 min</p>
+        <button class="green full">MESSAGE RIDER</button>
+      </div>
+      <div class="pay-card"><b>Delivery fee</b><strong>$2.50</strong><p>When Ahmad collects the food, scan his Kopi Boy QR and pay him directly.</p><button class="orange full" onclick="go('riderPay')">VIEW RIDER QR</button></div>
+    </div>
+
+    <div class="screen" id="riderPay">
+      <div class="screen-title dark"><button class="back-small" onclick="go('riderFound')">‹</button><b>Pay Rider</b><span></span></div>
+      <div class="qr-card">
+        <div class="fake-qr">▦</div>
+        <h2>Ahmad · Rider</h2><strong>$2.50</strong>
+        <p>Scan the rider's QR with your banking app. Payment goes directly to the rider.</p>
+        <button class="green full" onclick="toast('Rider payment recorded');go('cookDashboard')">I HAVE PAID THE RIDER</button>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="selected" onclick="go('cookDashboard')">▣<small>Orders</small></button>
+      <button onclick="go('findRider')">♙<small>Find Rider</small></button>
+      <button onclick="toast('Earnings')">◉<small>Earnings</small></button>
+      <button onclick="toast('Profile')">♙<small>Profile</small></button>
+    </nav>
+  </section>
+
+  <!-- RIDER -->
+  <section class="app hidden" id="riderApp">
+    <div class="phone-head">
+      <button class="icon-btn" onclick="back()">‹</button>
+      <div class="wordmark"><span class="mini-cup">☕</span> KOPI <b>BOY</b></div>
+      <button class="icon-btn bell">♧<i>1</i></button>
+    </div>
+    <div class="screen active" id="riderDashboard">
+      <div class="dashboard-heading"><div><small>KOPI BOY</small><h2>Rider Dashboard</h2></div><button class="icon-btn">♧</button></div>
+      <div class="tabs"><button class="active">New Jobs <i>1</i></button><button>Ongoing</button><button>History</button></div>
+      <div class="rider-job-card">
+        <div class="job-top"><b>New Delivery</b><span>10:12 AM</span></div>
+        <div class="address"><span>♙</span><div><small>Pick up from</small><b>Mak Cik Siti</b><em>1.2 km</em></div></div>
+        <div class="address"><span>⌖</span><div><small>Deliver to</small><b>Customer</b><em>2.8 km</em></div></div>
+        <div class="job-stat"><span>Total Distance</span><b>4.0 km</b></div>
+        <div class="job-stat"><span>Estimated Pay</span><b>$2.50</b></div>
+        <button class="green full" onclick="go('riderJob')">Accept Job</button>
+        <button class="decline full" onclick="toast('Job declined')">Decline</button>
+      </div>
+      <div class="earnings-card"><span>Earnings Today</span><strong>$32.80</strong><small>3 Jobs Completed</small></div>
+    </div>
+
+    <div class="screen" id="riderJob">
+      <div class="screen-title dark"><button class="back-small" onclick="go('riderDashboard')">‹</button><b>Order #KB12345</b><span></span></div>
+      <div class="rider-job-card">
+        <div class="status-green">✓ Accepted — Pick up now</div>
+        <div class="address"><span>♙</span><div><small>Pick up from</small><b>Mak Cik Siti</b><em>1.2 km</em></div></div>
+        <div class="address"><span>⌖</span><div><small>Deliver to</small><b>Customer</b><em>2.8 km</em></div></div>
+        <div class="direct-pay"><b>Delivery payment</b><strong>$2.50</strong><p>Merchant will PayNow you when you collect the food.</p></div>
+        <button class="green full" onclick="go('riderDelivery')">I've Collected Food</button>
+      </div>
+    </div>
+
+    <div class="screen" id="riderDelivery">
+      <div class="screen-title dark"><button class="back-small" onclick="go('riderJob')">‹</button><b>Deliver Order</b><span></span></div>
+      <div class="rider-found-card">
+        <div class="rider-illustration">📦</div><h2>Food collected ✓</h2><p>Deliver to customer · 2.8 km</p>
+        <button class="orange full" onclick="toast('Delivery completed ✓');go('riderDashboard')">Mark Delivered</button>
+      </div>
+    </div>
+    <nav class="bottom-nav">
+      <button class="selected" onclick="go('riderDashboard')">▣<small>Jobs</small></button>
+      <button onclick="toast('Earnings')">◉<small>Earnings</small></button>
+      <button onclick="toast('Profile')">♙<small>Profile</small></button>
+    </nav>
+  </section>
+
+  <div class="role-switch">
+    <button class="active" onclick="setRole('customerApp')">Customer</button>
+    <button onclick="setRole('cookApp')">Cook</button>
+    <button onclick="setRole('riderApp')">Rider</button>
+  </div>
+</div>
+<div id="toast"></div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script><script src="app.js"></script>
+</body>
+</html>
