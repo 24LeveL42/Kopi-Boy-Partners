@@ -489,20 +489,35 @@ function kbPhoneStart(){
   document.getElementById("kbPhoneArea")?.classList.remove("hidden");
 }
 
+// Auto-format a Singapore number to E.164 (+65XXXXXXXX) so testers don't
+// have to remember to type the country code themselves. If it already
+// looks like an international number (starts with +), leave it as-is so
+// other countries still work.
+function kbNormalizeSgPhone(raw){
+  let digits=String(raw||"").trim();
+  if(digits.startsWith("+"))return digits.replace(/\s+/g,"");
+  digits=digits.replace(/\D/g,"");
+  if(digits.startsWith("65")&&digits.length===10)return "+"+digits;
+  if(digits.length===8)return "+65"+digits;
+  return "+"+digits; // fallback: assume they typed a country code without the +
+}
+
 async function kbSendOtp(){
   if(!KB_AUTH_CONFIG.phoneOtpReady)return toast?.("Phone OTP will be enabled before public launch.");
-  const phone=document.getElementById("kbPhone")?.value?.trim();
-  if(!phone)return toast?.("Enter your phone number");
+  const raw=document.getElementById("kbPhone")?.value?.trim();
+  if(!raw)return toast?.("Enter your phone number");
+  const phone=kbNormalizeSgPhone(raw);
   const {error}=await supabase.auth.signInWithOtp({phone});
   if(error)return toast?.(error.message);
   document.getElementById("kbOtp")?.classList.remove("hidden");
   document.getElementById("kbVerifyBtn")?.classList.remove("hidden");
-  toast?.("OTP sent");
+  toast?.("OTP sent to "+phone);
 }
 
 async function kbVerifyOtp(){
-  const phone=document.getElementById("kbPhone")?.value?.trim(),token=document.getElementById("kbOtp")?.value?.trim();
-  if(!phone||!token)return toast?.("Enter the phone number and OTP");
+  const raw=document.getElementById("kbPhone")?.value?.trim(),token=document.getElementById("kbOtp")?.value?.trim();
+  if(!raw||!token)return toast?.("Enter the phone number and OTP");
+  const phone=kbNormalizeSgPhone(raw);
   const {error}=await supabase.auth.verifyOtp({phone,token,type:"sms"});
   if(error)return toast?.(error.message);
   kbCloseAuth();
